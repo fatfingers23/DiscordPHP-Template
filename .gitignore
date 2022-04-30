@@ -5,3 +5,4 @@ test.php
 composer.lock
 .php_cs.cache
 discord.log
+.idea

@@ -6,13 +6,18 @@
         "team-reflex/discord-php": "dev-master",
         "vlucas/phpdotenv": "^5.2",
         "davidcole1340/reactsh": "dev-master",
-        "phpdocumentor/reflection": "^4.0"
+        "phpdocumentor/reflection": "^4.0",
+        "pestphp/pest": "^1.21"
     },
     "license": "AGPL-3.0-or-later",
     "authors": [
         {
             "name": "David Cole",
             "email": "david.cole1340@gmail.com"
+        },
+        {
+            "name": "Bailey Townsend",
+            "email": "baileytownsend2323@gmail.com"
         }
     ],
     "autoload": {
