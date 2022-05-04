@@ -34,11 +34,11 @@ use React\EventLoop\Factory;
 use React\Sh\Shell;
 use React\Sh\StdioHandler;
 
-include __DIR__.'/vendor/autoload.php';
+include __DIR__ . '/vendor/autoload.php';
 
 // load environment file
 $dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+$dotenv->safeLoad();
 $dotenv->required(['TOKEN', 'LOG_FILE']);
 $dotenv->required('LOGGER_LEVEL')->allowedValues(array_keys(Logger::getLevels()));
 
@@ -46,20 +46,22 @@ $logger = new Logger('D.PHP');
 
 $loop = Factory::create();
 
+var_dump($_ENV['TOKEN']);
+
 $discord = new Discord([
-    'token' => $_ENV['TOKEN'],
-    'loop' => $loop,
-    'logger' => $logger,
-    'loadAllMembers' => true,
-    'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::GUILD_PRESENCES,
+  'token' => $_ENV['TOKEN'],
+  'loop' => $loop,
+  'logger' => $logger,
+  'loadAllMembers' => true,
+  'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::GUILD_PRESENCES,
 ]);
 
 $shell = new Shell($loop);
 
 if (strtolower($_ENV['LOG_FILE']) == 'stdout') {
-    $logger->pushHandler(new StdioHandler($shell->getStdio()));
+  $logger->pushHandler(new StdioHandler($shell->getStdio()));
 } else {
-    $logger->pushHandler(new StreamHandler($_ENV['LOG_FILE'], Logger::getLevels()[$_ENV['LOGGER_LEVEL']]));
+  $logger->pushHandler(new StreamHandler($_ENV['LOG_FILE'], Logger::getLevels()[$_ENV['LOGGER_LEVEL']]));
 }
 
 /**
@@ -71,45 +73,46 @@ if (strtolower($_ENV['LOG_FILE']) == 'stdout') {
  */
 function generateHelpCommand(Discord $discord, array $commands): Embed
 {
-    $embed = new Embed($discord);
-    $embed->setTitle('DiscordPHP');
+  $embed = new Embed($discord);
+  $embed->setTitle('DiscordPHP');
 
-    foreach ($commands as $name => $command) {
-        $embed->addFieldValues("@{$discord->username} ".$name, $command->getHelp());
-    }
+  foreach ($commands as $name => $command) {
+    $embed->addFieldValues("@{$discord->username} " . $name, $command->getHelp());
+  }
 
-    return $embed;
+  return $embed;
 }
 
 $commands = [
-    'reflect' => new Reflect($discord),
-    'info' => new Stats($discord),
-    'events' => new Events($discord),
+  'reflect' => new Reflect($discord),
+  'info' => new Stats($discord),
+  'events' => new Events($discord),
 ];
- 
-$discord->on('ready', function (Discord $discord) use ($commands, $shell) {
-    $discord->on('message', function (Message $message, Discord $discord) use ($commands) {
-        // check if message starts with mention
-        if (strpos($message->content, '<@'.$discord->id.'>') === 0 || strpos($message->content, '<@!'.$discord->id.'>') === 0) {
-            $args = explode(' ', $message->content);
-            array_shift($args);
 
-            if (count($args) > 0) {
-                $command = array_shift($args);
+$prefix = "!";
 
-                if (isset($commands[$command])) {
-                    $commands[$command]->handle($message, $args);
-                } else {
-                    $embed = generateHelpCommand($discord, $commands);
-                    $message->channel->sendEmbed($embed);
-                }
-            } else {
-                $commands['info']->handle($message, $args);
-            }
-        }
-    });
+$discord->on('ready', function (Discord $discord) use ($commands, $shell, $prefix) {
+  $discord->on('message', function (Message $message, Discord $discord) use ($commands, $prefix) {
+    // check if message starts with mention
+    var_dump(str_starts_with($message->content, $prefix));
+    if (str_starts_with($message->content, $prefix)) {
+      $args = explode(' ', $message->content);
+      $command = array_shift($args);
+      $command = str_replace($prefix, '', $command);
 
-    $shell->setScope(get_defined_vars());
+      var_dump($command);
+
+
+      if (isset($commands[$command])) {
+        $commands[$command]->handle($message, $args);
+      } else {
+        $embed = generateHelpCommand($discord, $commands);
+        $message->channel->sendEmbed($embed);
+      }
+    }
+  });
+
+  $shell->setScope(get_defined_vars());
 });
 
 $loop->run();
